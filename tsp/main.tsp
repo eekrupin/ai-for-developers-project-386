@@ -23,12 +23,14 @@ model EventType {
   id: EventTypeId;
   name: string;
   description: string;
+  @minValue(1)
   durationMinutes: int32;
 }
 
 model CreateEventTypeRequest {
   name: string;
   description: string;
+  @minValue(1)
   durationMinutes: int32;
 }
 
@@ -39,6 +41,9 @@ model AvailabilityWindow {
 }
 
 model PublishAvailabilityWindowRequest {
+  // Интервал доступности должен быть строго положительным: startAt < endAt.
+  // Интервал не должен пересекаться с уже опубликованными окнами доступности.
+  // При нарушении сервер возвращает ValidationError.
   startAt: utcDateTime;
   endAt: utcDateTime;
 }
@@ -63,6 +68,10 @@ model Booking {
 
 model CreateBookingRequest {
   eventTypeId: EventTypeId;
+
+  // Интервал бронирования должен быть строго положительным: startAt < endAt.
+  // Он также должен совпадать с длительностью выбранного типа события
+  // и одному из публично доступных слотов для этого eventTypeId.
   startAt: utcDateTime;
   endAt: utcDateTime;
   guestName: string;
@@ -105,6 +114,10 @@ model NotFoundError extends ErrorResponse {
 model ValidationError extends ErrorResponse {
   @statusCode
   statusCode: 422;
+
+  // Примеры причин: startAt >= endAt, durationMinutes < 1,
+  // интервал бронирования не совпадает с длительностью типа события
+  // или не соответствует доступному публичному слоту.
 }
 
 @error
@@ -147,7 +160,7 @@ interface OwnerEventTypesApi {
   @post
   createEventType(
     @body input: CreateEventTypeRequest,
-  ): CreatedEventType | BadRequestError;
+  ): CreatedEventType | BadRequestError | ValidationError;
 }
 
 @route("/owner/availability-windows")
@@ -182,9 +195,11 @@ interface GuestEventTypesApi {
   @route("/{eventTypeId}/slots")
   listAvailableSlots(
     @path eventTypeId: EventTypeId,
+    // Диапазон поиска слотов должен быть строго положительным: from < to.
+    // При нарушении сервер возвращает ValidationError.
     @query from: utcDateTime,
     @query to: utcDateTime,
-  ): AvailableSlot[] | BadRequestError | NotFoundError;
+  ): AvailableSlot[] | BadRequestError | NotFoundError | ValidationError;
 }
 
 @route("/bookings")
