@@ -1,0 +1,20 @@
+{
+  "name": "call-booking-calendar",
+  "private": true,
+  "scripts": {
+    "spec:build": "tsp compile tsp/main.tsp --emit @typespec/openapi3 --output-dir .tsp-output",
+    "types:generate": "openapi-typescript .tsp-output/@typespec/openapi3/openapi.yaml -o frontend/src/api/schema.ts",
+    "mock:prism": "prism mock .tsp-output/@typespec/openapi3/openapi.yaml -h 0.0.0.0 -p 4010",
+    "frontend:dev": "npm --prefix frontend run dev",
+    "frontend:build": "npm --prefix frontend run build",
+    "frontend:preview": "npm --prefix frontend run preview"
+  },
+  "devDependencies": {
+    "@stoplight/prism-cli": "^5.14.2",
+    "@typespec/compiler": "^0.66.0",
+    "@typespec/http": "^0.66.0",
+    "@typespec/openapi3": "^0.66.0",
+    "@typespec/rest": "^0.66.0",
+    "openapi-typescript": "^7.8.0"
+  }
+}
