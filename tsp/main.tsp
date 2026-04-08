@@ -9,6 +9,7 @@ namespace CalendarApi;
 
 // В системе один заранее заданный владелец календаря.
 // Регистрация и авторизация в рамках этого контракта отсутствуют.
+// В админской части по умолчанию используется этот преднастроенный профиль.
 
 alias EventTypeId = string;
 alias AvailabilityWindowId = string;
@@ -28,6 +29,7 @@ model EventType {
 }
 
 model CreateEventTypeRequest {
+  id: EventTypeId;
   name: string;
   description: string;
   @minValue(1)
@@ -66,12 +68,18 @@ model Booking {
   createdAt: utcDateTime;
 }
 
+// Модель для страницы предстоящих встреч владельца.
+// Список должен содержать только будущие бронирования всех типов событий.
+model UpcomingBooking extends Booking {}
+
 model CreateBookingRequest {
   eventTypeId: EventTypeId;
 
   // Интервал бронирования должен быть строго положительным: startAt < endAt.
   // Он также должен совпадать с длительностью выбранного типа события
   // и одному из публично доступных слотов для этого eventTypeId.
+  // Бронирование допускается только внутри окна записи на ближайшие 14 дней
+  // начиная с текущей даты.
   startAt: utcDateTime;
   endAt: utcDateTime;
   guestName: string;
@@ -80,6 +88,9 @@ model CreateBookingRequest {
 }
 
 // Публичный слот вычисляется из доступности владельца, длительности типа события и уже существующих бронирований.
+// В список попадают только действительно свободные интервалы: слоты, пересекающиеся
+// с любым существующим бронированием календаря, исключаются независимо от типа события.
+// По умолчанию список слотов строится на ближайшие 14 дней от текущей даты.
 model AvailableSlot {
   eventTypeId: EventTypeId;
   startAt: utcDateTime;
@@ -117,7 +128,8 @@ model ValidationError extends ErrorResponse {
 
   // Примеры причин: startAt >= endAt, durationMinutes < 1,
   // интервал бронирования не совпадает с длительностью типа события
-  // или не соответствует доступному публичному слоту.
+  // или не соответствует доступному публичному слоту,
+  // либо выходит за пределы окна записи ближайших 14 дней.
 }
 
 @error
@@ -177,7 +189,7 @@ interface OwnerAvailabilityApi {
 @route("/owner/bookings/upcoming")
 interface OwnerBookingsApi {
   @get
-  listUpcomingBookings(): Booking[];
+  listUpcomingBookings(): UpcomingBooking[];
 }
 
 @route("/event-types")
@@ -195,10 +207,12 @@ interface GuestEventTypesApi {
   @route("/{eventTypeId}/slots")
   listAvailableSlots(
     @path eventTypeId: EventTypeId,
-    // Диапазон поиска слотов должен быть строго положительным: from < to.
+    // Если диапазон не передан, сервер возвращает слоты на ближайшие 14 дней
+    // начиная с текущей даты. Если диапазон передан, он должен быть строго
+    // положительным и полностью лежать в этом 14-дневном окне.
     // При нарушении сервер возвращает ValidationError.
-    @query from: utcDateTime,
-    @query to: utcDateTime,
+    @query from?: utcDateTime,
+    @query to?: utcDateTime,
   ): AvailableSlot[] | BadRequestError | NotFoundError | ValidationError;
 }
 
