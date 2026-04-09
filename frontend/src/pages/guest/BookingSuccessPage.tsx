@@ -13,7 +13,7 @@ export function BookingSuccessPage() {
     <Stack gap="lg">
       <Title order={2}>Бронирование создано</Title>
 
-      <Card withBorder radius="md" padding="lg">
+      <Card withBorder radius="md" padding="lg" data-testid="booking-success">
         <Stack gap="sm">
           <Text fw={700}>{eventTypeName || 'Встреча'}</Text>
           {startAt && endAt ? <Text>{formatDateTimeRange(startAt, endAt)}</Text> : null}

@@ -10,9 +10,13 @@
     "backend:start": "npm --prefix backend run start",
     "frontend:dev": "npm --prefix frontend run dev",
     "frontend:build": "npm --prefix frontend run build",
-    "frontend:preview": "npm --prefix frontend run preview"
+    "frontend:preview": "npm --prefix frontend run preview",
+    "e2e": "playwright test",
+    "e2e:headed": "playwright test --headed",
+    "e2e:install": "playwright install chromium"
   },
   "devDependencies": {
+    "@playwright/test": "^1.54.2",
     "@stoplight/prism-cli": "^5.14.2",
     "@typespec/compiler": "^0.66.0",
     "@typespec/http": "^0.66.0",

@@ -9,7 +9,7 @@ type EventTypeCardProps = {
 
 export function EventTypeCard({ eventType, to }: EventTypeCardProps) {
   return (
-    <Card withBorder radius="md" padding="lg">
+    <Card withBorder radius="md" padding="lg" data-testid={`event-type-card-${eventType.id}`}>
       <Stack gap="md">
         <Group justify="space-between" align="flex-start">
           <Stack gap={4}>
@@ -21,7 +21,7 @@ export function EventTypeCard({ eventType, to }: EventTypeCardProps) {
           <Badge variant="light">{eventType.durationMinutes} мин</Badge>
         </Group>
 
-        <Button component={Link} to={to} variant="light">
+        <Button component={Link} to={to} variant="light" data-testid={`event-type-open-${eventType.id}`}>
           Открыть
         </Button>
       </Stack>

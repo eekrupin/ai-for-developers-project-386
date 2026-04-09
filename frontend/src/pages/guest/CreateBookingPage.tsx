@@ -108,7 +108,7 @@ export function CreateBookingPage() {
           ) : null}
 
           {submitError ? (
-            <Alert color="red" title="Не удалось создать бронирование">
+            <Alert color="red" title="Не удалось создать бронирование" data-testid="booking-conflict-alert">
               <Stack gap="xs">
                 <Text>{submitError}</Text>
                 <Button
@@ -124,7 +124,7 @@ export function CreateBookingPage() {
             </Alert>
           ) : null}
 
-          <Card withBorder radius="md" padding="lg">
+          <Card withBorder radius="md" padding="lg" data-testid="booking-form">
             <Stack gap="md">
               <TextInput
                 label="Имя"
@@ -149,7 +149,12 @@ export function CreateBookingPage() {
               />
 
               <Group>
-                <Button onClick={handleSubmit} loading={submitting} disabled={!guestName || !guestEmail}>
+                <Button
+                  onClick={handleSubmit}
+                  loading={submitting}
+                  disabled={!guestName || !guestEmail}
+                  data-testid="booking-submit"
+                >
                   Подтвердить запись
                 </Button>
                 <Text size="sm" c="dimmed">

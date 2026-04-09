@@ -40,6 +40,7 @@ export function DaySlotsList({ slots }: DaySlotsListProps) {
                 <Button
                   component={Link}
                   to={bookingUrl}
+                  data-testid={`slot-button-${slot.startAt}`}
                   variant="light"
                   color="indigo"
                   justify="space-between"

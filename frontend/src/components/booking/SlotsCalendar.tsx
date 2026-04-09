@@ -39,6 +39,7 @@ export function SlotsCalendar({
             return (
               <Button
                 key={dateKey}
+                data-testid={`calendar-day-${dateKey}`}
                 aria-pressed={isSelected}
                 aria-label={`${formatWeekdayShort(dateKey)} ${formatDayOfMonth(dateKey)}. ${slotsCount > 0 ? formatSlotsCount(slotsCount) : 'Слотов нет'}`}
                 variant={isSelected ? 'filled' : 'default'}
