@@ -1,16 +1,21 @@
 import type { AvailabilityWindow, Booking, EventType, Owner } from "../domain/types";
-
-const DEFAULT_OWNER: Owner = {
-  id: "owner-default",
-  name: "Владелец календаря",
-};
+import { createSeedData } from "./seed";
 
 export class MemoryStore {
-  owner: Owner = { ...DEFAULT_OWNER };
+  owner: Owner;
 
-  eventTypes: EventType[] = [];
+  eventTypes: EventType[];
 
-  availabilityWindows: AvailabilityWindow[] = [];
+  availabilityWindows: AvailabilityWindow[];
 
-  bookings: Booking[] = [];
+  bookings: Booking[];
+
+  constructor(now = new Date()) {
+    const seedData = createSeedData(now);
+
+    this.owner = seedData.owner;
+    this.eventTypes = seedData.eventTypes;
+    this.availabilityWindows = seedData.availabilityWindows;
+    this.bookings = seedData.bookings;
+  }
 }

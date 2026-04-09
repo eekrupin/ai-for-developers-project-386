@@ -225,6 +225,8 @@ https://<service-name>.onrender.com
 - `GET /api/event-types` и `GET /api/event-types/{eventTypeId}` — публичное чтение типов событий.
 - `GET /api/event-types/{eventTypeId}/slots` — вычисление свободных слотов внутри окна ближайших 14 дней.
 - `POST /api/bookings` — создание бронирования с проверкой занятости на backend.
+- при старте backend создаются два предопределённых типа встречи: `quick-call-15` и `standard-call-30`.
+- при старте backend создаются окна доступности на ближайшие 3 дня, каждый день с `10:00` до `18:00` по UTC.
 
 ## Ключевые правила backend
 
