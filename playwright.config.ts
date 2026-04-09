@@ -26,7 +26,7 @@ export default defineConfig({
   webServer: [
     {
       command: 'npm run backend:dev',
-      url: `${backendUrl}/owner/profile`,
+      url: `${backendUrl}/api/owner/profile`,
       reuseExistingServer: !process.env.CI,
       timeout: 120000,
       env: {
@@ -42,7 +42,8 @@ export default defineConfig({
       timeout: 120000,
       env: {
         ...process.env,
-        VITE_API_BASE_URL: backendUrl,
+        VITE_API_BASE_URL: '/api',
+        VITE_DEV_API_TARGET: backendUrl,
       },
     },
   ],

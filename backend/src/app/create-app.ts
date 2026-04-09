@@ -1,5 +1,6 @@
 import cors from "cors";
 import express from "express";
+import path from "node:path";
 import { env } from "../config/env";
 import { AvailabilityService } from "../services/availability-service";
 import { BookingsService } from "../services/bookings-service";
@@ -19,16 +20,23 @@ export function createApp() {
   const bookingsService = new BookingsService(store, slotsService);
 
   const app = express();
+  const frontendDistPath = path.resolve(__dirname, "../../..", env.frontendDistDir);
+  const frontendIndexPath = path.join(frontendDistPath, "index.html");
+
+  if (env.corsOrigin) {
+    app.use(
+      cors({
+        origin: env.corsOrigin,
+        methods: ["GET", "POST", "OPTIONS"],
+        allowedHeaders: ["Content-Type"],
+      }),
+    );
+  }
+
+  app.use(express.json());
 
   app.use(
-    cors({
-      origin: env.corsOrigin,
-      methods: ["GET", "POST", "OPTIONS"],
-      allowedHeaders: ["Content-Type"],
-    }),
-  );
-  app.use(express.json());
-  app.use(
+    "/api",
     createRoutes({
       ownerService,
       eventTypesService,
@@ -37,6 +45,18 @@ export function createApp() {
       bookingsService,
     }),
   );
+
+  app.use(express.static(frontendDistPath));
+
+  app.get("*", (request, response, next) => {
+    if (request.path.startsWith("/api") || path.extname(request.path)) {
+      next();
+      return;
+    }
+
+    response.sendFile(frontendIndexPath);
+  });
+
   app.use(errorHandler);
 
   return app;

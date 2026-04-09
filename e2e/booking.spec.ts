@@ -2,6 +2,7 @@ import { expect, test, type APIRequestContext } from '@playwright/test'
 import { backendUrl } from './support/test-env'
 
 const runId = Date.now().toString(36)
+const apiBaseUrl = `${backendUrl}/api`
 
 type AvailableSlot = {
   eventTypeId: string
@@ -116,7 +117,7 @@ async function bookSlotThroughApi(
   context: TestBookingContext,
   guest: { guestName: string; guestEmail: string },
 ) {
-  const response = await request.post(`${backendUrl}/bookings`, {
+  const response = await request.post(`${apiBaseUrl}/bookings`, {
     data: {
       eventTypeId: context.eventTypeId,
       startAt: context.slot.startAt,
@@ -130,7 +131,7 @@ async function bookSlotThroughApi(
 }
 
 async function postJson(path: string, payload: unknown) {
-  const response = await fetch(`${backendUrl}${path}`, {
+  const response = await fetch(`${apiBaseUrl}${path}`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -144,7 +145,7 @@ async function postJson(path: string, payload: unknown) {
 }
 
 async function getJson<T>(path: string): Promise<T> {
-  const response = await fetch(`${backendUrl}${path}`)
+  const response = await fetch(`${apiBaseUrl}${path}`)
 
   if (!response.ok) {
     throw new Error(`Не удалось прочитать тестовые данные: ${path} -> ${response.status}`)

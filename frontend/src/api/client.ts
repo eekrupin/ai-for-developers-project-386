@@ -11,7 +11,7 @@ import type {
   UpcomingBooking,
 } from './types'
 
-const FALLBACK_API_BASE_URL = 'http://127.0.0.1:4010'
+const FALLBACK_API_BASE_URL = '/api'
 
 const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL || FALLBACK_API_BASE_URL).replace(
   /\/$/,
