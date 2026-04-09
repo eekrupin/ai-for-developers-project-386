@@ -70,7 +70,11 @@ export function CreateBookingPage() {
       )
     } catch (caughtError) {
       if (caughtError instanceof ApiError) {
-        setSubmitError(caughtError.payload?.message || caughtError.message)
+        if (caughtError.status === 409) {
+          setSubmitError('Этот слот уже заняли или он успел устареть. Вернитесь назад и выберите другое время.')
+        } else {
+          setSubmitError(caughtError.payload?.message || caughtError.message)
+        }
       } else if (caughtError instanceof Error) {
         setSubmitError(caughtError.message)
       } else {
@@ -105,7 +109,18 @@ export function CreateBookingPage() {
 
           {submitError ? (
             <Alert color="red" title="Не удалось создать бронирование">
-              {submitError}
+              <Stack gap="xs">
+                <Text>{submitError}</Text>
+                <Button
+                  component={Link}
+                  to={eventTypeId ? `/event-types/${eventTypeId}` : '/'}
+                  variant="light"
+                  color="red"
+                  w="fit-content"
+                >
+                  Вернуться к слотам
+                </Button>
+              </Stack>
             </Alert>
           ) : null}
 

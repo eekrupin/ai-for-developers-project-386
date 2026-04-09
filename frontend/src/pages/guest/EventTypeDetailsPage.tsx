@@ -1,21 +1,19 @@
-import {
-  Alert,
-  Badge,
-  Button,
-  Card,
-  Group,
-  SimpleGrid,
-  Stack,
-  Text,
-  TextInput,
-  Title,
-} from '@mantine/core'
-import { useEffect, useState } from 'react'
+import { Badge, Button, Card, Group, SimpleGrid, Stack, Text, Title } from '@mantine/core'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { api, ApiError } from '../../api/client'
 import type { AvailableSlot, EventType } from '../../api/types'
+import { DaySlotsList } from '../../components/booking/DaySlotsList'
+import { SlotsCalendar } from '../../components/booking/SlotsCalendar'
 import { AsyncState } from '../../components/ui/AsyncState'
-import { formatDateTimeRange, toIsoDateTime } from '../../lib/date'
+import {
+  buildUpcomingDateKeys,
+  formatFullDate,
+  formatSlotsCount,
+  getDateFromKey,
+  groupSlotsByLocalDate,
+  isTodayDateKey,
+} from '../../lib/date'
 
 export function EventTypeDetailsPage() {
   const { eventTypeId = '' } = useParams()
@@ -23,14 +21,13 @@ export function EventTypeDetailsPage() {
   const [slots, setSlots] = useState<AvailableSlot[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [fromValue, setFromValue] = useState('')
-  const [toValue, setToValue] = useState('')
+  const [selectedDateKey, setSelectedDateKey] = useState<string | null>(null)
 
-  function loadData(from?: string, to?: string) {
+  const loadData = useCallback(() => {
     setLoading(true)
     setError(null)
 
-    Promise.all([api.getEventType(eventTypeId), api.listAvailableSlots(eventTypeId, from, to)])
+    Promise.all([api.getEventType(eventTypeId), api.listAvailableSlots(eventTypeId)])
       .then(([eventTypeResponse, slotsResponse]) => {
         setEventType(eventTypeResponse)
         setSlots(slotsResponse)
@@ -44,14 +41,42 @@ export function EventTypeDetailsPage() {
         setError(caughtError.message)
       })
       .finally(() => setLoading(false))
-  }
+  }, [eventTypeId])
 
   useEffect(() => {
     loadData()
-  }, [eventTypeId])
+  }, [loadData])
 
-  const selectedFrom = toIsoDateTime(fromValue)
-  const selectedTo = toIsoDateTime(toValue)
+  const slotsByDate = useMemo(() => groupSlotsByLocalDate(slots), [slots])
+  const dateKeys = useMemo(() => {
+    const upcomingDateKeys = buildUpcomingDateKeys(14)
+    const mergedDateKeys = new Set([...upcomingDateKeys, ...Object.keys(slotsByDate)])
+
+    return Array.from(mergedDateKeys).sort(
+      (leftDateKey, rightDateKey) =>
+        getDateFromKey(leftDateKey).getTime() - getDateFromKey(rightDateKey).getTime(),
+    )
+  }, [slotsByDate])
+  const slotsCountByDate = useMemo(
+    () =>
+      dateKeys.reduce<Record<string, number>>((counts, dateKey) => {
+        counts[dateKey] = slotsByDate[dateKey]?.length || 0
+        return counts
+      }, {}),
+    [dateKeys, slotsByDate],
+  )
+  const firstAvailableDateKey = useMemo(
+    () => dateKeys.find((dateKey) => (slotsByDate[dateKey] || []).length > 0) || null,
+    [dateKeys, slotsByDate],
+  )
+  const activeDateKey = selectedDateKey && slotsByDate[selectedDateKey] ? selectedDateKey : firstAvailableDateKey
+  const activeDaySlots = activeDateKey ? slotsByDate[activeDateKey] || [] : []
+
+  useEffect(() => {
+    if (!selectedDateKey || !slotsByDate[selectedDateKey]) {
+      setSelectedDateKey(firstAvailableDateKey)
+    }
+  }, [firstAvailableDateKey, selectedDateKey, slotsByDate])
 
   return (
     <Stack gap="lg">
@@ -60,55 +85,23 @@ export function EventTypeDetailsPage() {
       </Button>
 
       {eventType ? (
-        <Card withBorder radius="md" padding="lg">
-          <Group justify="space-between" align="flex-start">
-            <div>
-              <Title order={2}>{eventType.name}</Title>
-              <Text c="dimmed">{eventType.description}</Text>
-            </div>
-            <Badge variant="light">{eventType.durationMinutes} мин</Badge>
-          </Group>
+        <Card withBorder radius="lg" padding="xl">
+          <Stack gap="md">
+            <Group justify="space-between" align="flex-start" wrap="wrap">
+              <div>
+                <Title order={2}>{eventType.name}</Title>
+                <Text c="dimmed">{eventType.description}</Text>
+              </div>
+              <Badge variant="light" size="lg">
+                {eventType.durationMinutes} мин
+              </Badge>
+            </Group>
+
+            <Text size="sm" c="dimmed">
+              Сначала выберите день, затем свободное время. Все интервалы уже соответствуют длительности события.
+            </Text>
+          </Stack>
         </Card>
-      ) : null}
-
-      <Card withBorder radius="md" padding="lg">
-        <Stack gap="md">
-          <Title order={4}>Фильтр слотов</Title>
-          <SimpleGrid cols={{ base: 1, md: 2 }}>
-            <TextInput
-              type="datetime-local"
-              label="От"
-              value={fromValue}
-              onChange={(event) => setFromValue(event.currentTarget.value)}
-            />
-            <TextInput
-              type="datetime-local"
-              label="До"
-              value={toValue}
-              onChange={(event) => setToValue(event.currentTarget.value)}
-            />
-          </SimpleGrid>
-
-          <Group>
-            <Button onClick={() => loadData(selectedFrom, selectedTo)}>Обновить слоты</Button>
-            <Button
-              variant="default"
-              onClick={() => {
-                setFromValue('')
-                setToValue('')
-                loadData()
-              }}
-            >
-              Сбросить
-            </Button>
-          </Group>
-        </Stack>
-      </Card>
-
-      {error && !loading ? (
-        <Alert color="yellow" title="Подсказка по контракту">
-          Контракт разрешает запрашивать слоты только в пределах ближайших 14 дней. Если передаёте `from/to`, диапазон должен быть валидным и положительным.
-        </Alert>
       ) : null}
 
       <AsyncState
@@ -116,29 +109,44 @@ export function EventTypeDetailsPage() {
         error={error}
         empty={!slots.length}
         emptyTitle="Свободных слотов нет"
-        emptyDescription="Попробуйте другой диапазон или вернитесь позже."
+        emptyDescription="Попробуйте вернуться позже: владелец мог ещё не опубликовать доступное время на ближайшие 14 дней."
       >
-        <Stack gap="md">
-          {slots.map((slot) => {
-            const bookingUrl = `/bookings/new?eventTypeId=${slot.eventTypeId}&startAt=${encodeURIComponent(slot.startAt)}&endAt=${encodeURIComponent(slot.endAt)}`
+        <SimpleGrid cols={{ base: 1, md: 2 }} spacing="lg" verticalSpacing="lg">
+          <SlotsCalendar
+            dateKeys={dateKeys}
+            selectedDateKey={activeDateKey}
+            slotsCountByDate={slotsCountByDate}
+            onSelect={setSelectedDateKey}
+          />
 
-            return (
-              <Card key={`${slot.startAt}-${slot.endAt}`} withBorder radius="md">
-                <Group justify="space-between" wrap="wrap">
-                  <div>
-                    <Text fw={600}>{formatDateTimeRange(slot.startAt, slot.endAt)}</Text>
-                    <Text size="sm" c="dimmed">
-                      Слот рассчитан на выбранный тип события.
-                    </Text>
-                  </div>
-                  <Button component={Link} to={bookingUrl}>
-                    Забронировать
-                  </Button>
-                </Group>
-              </Card>
-            )
-          })}
-        </Stack>
+          <Stack gap="md">
+            <Card withBorder radius="lg" padding="lg">
+              <Stack gap={4}>
+                <Text fw={700}>Выбранный день</Text>
+                <Text size="sm" c="dimmed">
+                  {activeDateKey ? formatFullDate(activeDateKey) : 'Нет доступных дней'}
+                </Text>
+                {activeDateKey ? (
+                  <Text size="sm" c="dimmed">
+                    {isTodayDateKey(activeDateKey) ? 'Можно записаться уже сегодня.' : 'Дата доступна для бронирования.'}
+                  </Text>
+                ) : null}
+                {eventType ? (
+                  <Text size="sm" c="dimmed">
+                    Длительность встречи: {eventType.durationMinutes} мин
+                  </Text>
+                ) : null}
+                {activeDaySlots.length ? (
+                  <Text size="sm" c="dimmed">
+                    Доступно: {formatSlotsCount(activeDaySlots.length)}
+                  </Text>
+                ) : null}
+              </Stack>
+            </Card>
+
+            <DaySlotsList slots={activeDaySlots} />
+          </Stack>
+        </SimpleGrid>
       </AsyncState>
     </Stack>
   )
