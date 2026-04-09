@@ -32,36 +32,53 @@ export function SlotsCalendar({
             const slotsCount = slotsCountByDate[dateKey] || 0
             const isSelected = selectedDateKey === dateKey
             const isToday = isTodayDateKey(dateKey)
+            const hasSlots = slotsCount > 0
+            const textColor = isSelected ? 'white' : hasSlots ? 'dark' : 'dimmed'
+            const metaColor = isSelected ? 'white' : hasSlots ? 'green' : 'dimmed'
 
             return (
               <Button
                 key={dateKey}
                 aria-pressed={isSelected}
                 aria-label={`${formatWeekdayShort(dateKey)} ${formatDayOfMonth(dateKey)}. ${slotsCount > 0 ? formatSlotsCount(slotsCount) : 'Слотов нет'}`}
-                variant={isSelected ? 'filled' : slotsCount > 0 ? 'light' : 'default'}
+                variant={isSelected ? 'filled' : 'default'}
                 color={isSelected ? 'indigo' : 'gray'}
                 onClick={() => onSelect(dateKey)}
-                disabled={slotsCount === 0}
+                disabled={!hasSlots}
                 h="auto"
                 px="md"
                 py="sm"
-                styles={{ inner: { display: 'block', width: '100%' }, label: { width: '100%' } }}
+                styles={{
+                  root: !isSelected
+                    ? hasSlots
+                      ? {
+                          backgroundColor: 'var(--mantine-color-green-0)',
+                          borderColor: 'var(--mantine-color-green-2)',
+                        }
+                      : {
+                          backgroundColor: 'var(--mantine-color-gray-0)',
+                          borderColor: 'var(--mantine-color-gray-2)',
+                        }
+                    : undefined,
+                  inner: { display: 'block', width: '100%' },
+                  label: { width: '100%' },
+                }}
               >
                 <Stack gap={2} align="flex-start">
                   <Group gap={6} wrap="nowrap">
-                    <Text tt="uppercase" size="xs" c={isSelected ? 'white' : 'dimmed'}>
+                    <Text tt="uppercase" size="xs" c={textColor}>
                       {formatWeekdayShort(dateKey)}
                     </Text>
                     {isToday ? (
-                      <Text size="xs" c={isSelected ? 'white' : 'indigo'}>
+                      <Text size="xs" c={isSelected ? 'white' : hasSlots ? 'green' : 'dimmed'}>
                         Сегодня
                       </Text>
                     ) : null}
                   </Group>
-                  <Text fw={700} size="lg" c={isSelected ? 'white' : undefined}>
+                  <Text fw={700} size="lg" c={textColor}>
                     {formatDayOfMonth(dateKey)}
                   </Text>
-                  <Text size="xs" c={isSelected ? 'white' : 'dimmed'}>
+                  <Text size="xs" c={metaColor}>
                     {slotsCount > 0 ? formatSlotsCount(slotsCount) : 'Нет слотов'}
                   </Text>
                 </Stack>
